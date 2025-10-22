@@ -1,0 +1,89 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code, and run tests across different versions of node
+# For more information, see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Run Newman Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  run-api-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Check out the repo
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    # Setup Node.js
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    # Install Newman
+    - name: Install Newman
+      run: npm install -g newman newman-reporter-htmlextra
+
+    - name: Create reports directory
+      run: mkdir -p reports
+      
+    - name: Run User Management Tests
+      run: |
+        newman run "API DemoQA.postman_collection.json" \
+        -e testEnv.postman_environment.json \
+        --folder "User Management" \
+        -d data/user_passwd.csv \
+        -r cli,htmlextra \
+        --reporter-htmlextra-export "reports/newman-report-user.html"
+        
+    - name: Run Authentication Tests
+      run: |
+        newman run "API DemoQA.postman_collection.json" \
+        -e testEnv.postman_environment.json \
+        --folder "Authentication" \
+        -r cli,htmlextra \
+        --reporter-htmlextra-export "reports/newman-report-auth.html"
+        
+    - name: Run Book Management Tests
+      run: |
+        newman run "API DemoQA.postman_collection.json" \
+        -e testEnv.postman_environment.json \
+        --folder "Book Management" \
+        -r cli,htmlextra \
+        --reporter-htmlextra-export "reports/newman-report-book.html"
+        
+    - name: Run Book Collection Tests
+      run: |
+        newman run "API DemoQA.postman_collection.json" \
+        -e testEnv.postman_environment.json \
+        --folder "Book Collection" \
+        -r cli,htmlextra \
+        --reporter-htmlextra-export "reports/newman-report-collection.html"
+        
+    - name: Run End-to-End flow Tests
+      run: |
+        newman run "API DemoQA.postman_collection.json" \
+        -e testEnv.postman_environment.json \
+        --folder "End to End flow" \
+        -d data/user_passwd.csv \
+        -r cli,htmlextra \
+        --reporter-htmlextra-export "reports/newman-report-e2e.html"
+        
+    - name: Run Error Handling Tests
+      run: |
+        newman run "API DemoQA.postman_collection.json" \
+        -e testEnv.postman_environment.json \
+        --folder "Error Handling" \
+        -r cli,htmlextra \
+        --reporter-htmlextra-export "reports/newman-report-error.html"
+        
+    # Upload reports
+    - name: Upload Newman reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: newman-reports
+        path: reports/
